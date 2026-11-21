@@ -10,70 +10,28 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-
       - name: Setup Web App
         run: |
           mkdir -p www
-          cat << 'EOF' > www/index.html
-          <!DOCTYPE html>
-          <html lang="id">
-          <head>
-            <meta charset="UTF-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-            <title>4LeChess</title>
-            <style>
-              body { margin: 0; background: #0f1115; color: #f3f4f6; font-family: -apple-system, sans-serif; padding: 16px; }
-              .card { background: #181b22; border-radius: 14px; padding: 16px; }
-              input, button { padding: 10px 12px; border-radius: 10px; border: none; font-size: 14px; width: 100%; margin-top: 8px; }
-              input { background: #101318; color: #fff; border: 1px solid #2b303c; }
-              button { background: #38bdf8; color: #07131a; font-weight: 700; }
-              .item { background: #11141a; padding: 10px; border-radius: 10px; margin-top: 8px; font-size: 13px; }
-            </style>
-          </head>
-          <body>
-            <div class="card">
-              <h2 style="margin:0;">4LeChess</h2>
-              <input id="user" value="CMaj7-9" placeholder="Username Chess.com" />
-              <button onclick="loadGames()">Muat Pertandingan</button>
-              <div id="status" style="margin-top:10px;font-size:12px;color:#9ca3af;">Siap memuat data...</div>
-              <div id="list"></div>
-            </div>
-            <script>
-              async function loadGames() {
-                const u = (document.getElementById("user").value || "CMaj7-9").trim().toLowerCase();
-                const status = document.getElementById("status");
-                const list = document.getElementById("list");
-                status.textContent = "Memuat arsip " + u + "...";
-                list.innerHTML = "";
-                try {
-                  const r1 = await fetch(`https://api.chess.com/pub/player/${u}/games/archives`);
-                  const d1 = await r1.json();
-                  const last = d1.archives[d1.archives.length - 1];
-                  const r2 = await fetch(last);
-                  const d2 = await r2.json();
-                  const games = (d2.games || []).slice(-6).reverse();
-                  status.textContent = `Ditemukan ${games.length} pertandingan terakhir.`;
-                  games.forEach((g, i) => {
-                    const div = document.createElement("div");
-                    div.className = "item";
-                    div.textContent = `#${i+1} ${g.white.username} vs ${g.black.username} (${g.white.result})`;
-                    list.appendChild(div);
-                  });
-                } catch (e) {
-                  status.textContent = "Gagal memuat data Chess.com.";
-                }
-              }
-              loadGames();
-            </script>
-          </body>
-          </html>
-          EOF
-
+          printf '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>4LeChess</title></head><body style="background:#0f1115;color:#fff;font-family:-apple-system,sans-serif;padding:16px"><h2>4LeChess</h2><input id="u" value="CMaj7-9" style="width:100%;padding:10px;border-radius:8px;border:0"><button onclick="run()" style="width:100%;padding:10px;margin-top:8px;border-radius:8px;border:0;background:#38bdf8;font-weight:700">Muat Pertandingan</button><div id="out" style="margin-top:12px"></div><script>async function run(){const u=(document.getElementById("u").value||"CMaj7-9").trim().toLowerCase();const out=document.getElementById("out");out.textContent="Memuat...";try{const a=await(await fetch("https://api.chess.com/pub/player/"+u+"/games/archives")).json();const g=await(await fetch(a.archives[a.archives.length-1])).json();out.innerHTML=(g.games||[]).slice(-6).reverse().map((x,i)=>"<div style=margin-top:6px>#"+(i+1)+" "+x.white.username+" vs "+x.black.username+" ("+x.white.result+")</div>").join("")}catch(e){out.textContent="Gagal memuat"}}run()</script></body></html>\n' > www/index.html
       - name: Build Capacitor iOS
         run: |
           npm init -y
-          npm
+          npm install @capacitor/core @capacitor/cli @capacitor/ios
+          npx cap init "4LeChess" "com.alesyhr.fourlechess" --web-dir=www
+          npx cap add ios
+          npx cap sync ios
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -arch arm64 CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" CONFIGURATION_BUILD_DIR=$PWD/build_out
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -r build_out/App.app Payload/4LeChess.app
+          zip -r 4LeChess.ipa Payload
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: 4LeChess-IPA
+          path: 4LeChess.ipa
