@@ -34,6 +34,13 @@ jobs:
                 --accent: #38bdf8;
                 --light-sq: #ecefd9;
                 --dark-sq: #769656;
+                --brilliant: #26c6da;
+                --great: #5c9ded;
+                --best: #4ade80;
+                --good: #a3e635;
+                --inaccuracy: #facc15;
+                --mistake: #fb923c;
+                --blunder: #f87171;
               }
               * {
                 box-sizing: border-box;
@@ -49,7 +56,7 @@ jobs:
                 overscroll-behavior-y: none;
               }
               body {
-                padding: calc(12px + env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom));
+                padding: calc(12px + env(safe-area-inset-top)) 14px calc(28px + env(safe-area-inset-bottom));
               }
               .top-title {
                 text-align: center;
@@ -84,26 +91,57 @@ jobs:
                 color: #06121a;
                 border: none;
                 border-radius: 12px;
-                padding: 11px 14px;
-                font-size: 14px;
+                padding: 11px 13px;
+                font-size: 13px;
                 font-weight: 700;
                 cursor: pointer;
               }
-              button.nav-btn {
+              button.sec {
                 background: var(--panel-2);
                 color: var(--text);
                 border: 1px solid var(--border);
-                font-size: 16px;
-                padding: 11px 0;
               }
-              button.nav-btn:active {
-                background: #272f40;
+              button.sec.active {
+                border-color: var(--accent);
+                color: var(--accent);
+                background: #172433;
+              }
+              button.warn-btn {
+                background: #f59e0b;
+                color: #140d02;
               }
               .status {
                 margin-top: 8px;
                 font-size: 12px;
                 color: var(--muted);
                 line-height: 1.4;
+              }
+              .eval-wrap {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 10px;
+              }
+              .eval-bar {
+                flex: 1;
+                height: 10px;
+                background: #232732;
+                border-radius: 999px;
+                overflow: hidden;
+                border: 1px solid var(--border);
+              }
+              .eval-fill {
+                height: 100%;
+                width: 50%;
+                background: #f5f7fa;
+                transition: width 0.2s ease;
+              }
+              .eval-score {
+                font-size: 12px;
+                font-weight: 700;
+                min-width: 58px;
+                text-align: right;
+                color: var(--text);
               }
               .board {
                 width: 100%;
@@ -116,35 +154,83 @@ jobs:
                 border: 1px solid var(--border);
               }
               .sq {
+                position: relative;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 padding: 6%;
+                cursor: pointer;
               }
               .sq.light { background: var(--light-sq); }
               .sq.dark { background: var(--dark-sq); }
+              .sq.selected {
+                box-shadow: inset 0 0 0 3px #0284c7;
+                background: #bae6fd !important;
+              }
+              .sq.last-move {
+                box-shadow: inset 0 0 0 2px rgba(250, 204, 21, 0.85);
+              }
+              .sq.legal-dot::after {
+                content: "";
+                width: 28%;
+                height: 28%;
+                border-radius: 999px;
+                background: rgba(15, 23, 42, 0.42);
+              }
               .sq svg {
                 width: 100%;
                 height: 100%;
                 display: block;
+                pointer-events: none;
                 filter: drop-shadow(0 1px 1px rgba(0,0,0,0.25));
               }
-              .move-bar {
+              .review-box {
                 margin-top: 10px;
                 background: var(--panel-2);
                 border: 1px solid var(--border);
                 border-radius: 12px;
-                padding: 10px 12px;
+                padding: 11px 12px;
+              }
+              .review-top {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                font-size: 13px;
+                gap: 8px;
+              }
+              .move-title {
+                font-size: 14px;
+                font-weight: 800;
+              }
+              .class-badge {
+                font-size: 11px;
+                font-weight: 800;
+                padding: 3px 9px;
+                border-radius: 999px;
+                color: #090d14;
+                background: var(--good);
+                white-space: nowrap;
+              }
+              .review-desc {
+                margin-top: 6px;
+                font-size: 12px;
+                color: var(--muted);
+                line-height: 1.45;
+              }
+              .tool-row {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+                margin-top: 10px;
               }
               .nav-grid {
                 display: grid;
                 grid-template-columns: repeat(4, 1fr);
                 gap: 8px;
-                margin-top: 10px;
+                margin-top: 8px;
+              }
+              .nav-grid button {
+                font-size: 16px;
+                padding: 11px 0;
               }
               .section-label {
                 font-size: 13px;
@@ -156,11 +242,23 @@ jobs:
                 border: 1px solid var(--border);
                 border-radius: 12px;
                 padding: 10px;
-                max-height: 120px;
+                max-height: 125px;
                 overflow-y: auto;
                 font-size: 12px;
-                line-height: 1.65;
+                line-height: 1.7;
                 color: var(--muted);
+              }
+              .move-chip {
+                display: inline-block;
+                padding: 1px 5px;
+                border-radius: 6px;
+                margin: 1px;
+                cursor: pointer;
+              }
+              .move-chip.active {
+                background: var(--accent);
+                color: #06121a;
+                font-weight: 700;
               }
               .game-card {
                 background: var(--panel-2);
@@ -182,9 +280,52 @@ jobs:
                 margin-top: 3px;
                 word-break: break-all;
               }
+              .loading-screen {
+                position: fixed;
+                inset: 0;
+                background: rgba(11, 13, 18, 0.9);
+                backdrop-filter: blur(6px);
+                display: none;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                z-index: 999;
+                padding: 24px;
+                text-align: center;
+              }
+              .loading-screen.show {
+                display: flex;
+              }
+              .spinner {
+                width: 40px;
+                height: 40px;
+                border: 4px solid rgba(56, 189, 248, 0.22);
+                border-top-color: var(--accent);
+                border-radius: 50%;
+                animation: spin 0.8s linear infinite;
+                margin-bottom: 12px;
+              }
+              @keyframes spin {
+                to { transform: rotate(360deg); }
+              }
+              .loading-title {
+                font-size: 15px;
+                font-weight: 800;
+              }
+              .loading-sub {
+                font-size: 12px;
+                color: var(--muted);
+                margin-top: 4px;
+              }
             </style>
           </head>
           <body>
+            <div id="loadingScreen" class="loading-screen">
+              <div class="spinner"></div>
+              <div id="loadingTitle" class="loading-title">Menganalisis dengan Engine Online...</div>
+              <div id="loadingSub" class="loading-sub">Menghubungkan ke Stockfish API</div>
+            </div>
+
             <div class="top-title">4LeChess</div>
 
             <div class="card">
@@ -192,25 +333,44 @@ jobs:
                 <input id="gameLinkInput" type="url" placeholder="Tempel link game Chess.com..." autocomplete="off" />
                 <button id="loadBtn" type="button">Bedah</button>
               </div>
-              <div id="statusText" class="status">Tempel link game yang sudah dimainkan untuk langsung memuat dan membedah langkah.</div>
+              <div id="statusText" class="status">Tempel link game yang sudah dimainkan untuk langsung memuat dan membedah langkah dengan engine online.</div>
             </div>
 
             <div class="card">
+              <div class="eval-wrap">
+                <div class="eval-bar"><div id="evalFill" class="eval-fill"></div></div>
+                <div id="evalScore" class="eval-score">0.0</div>
+              </div>
+
               <div id="chessBoard" class="board"></div>
-              <div class="move-bar">
-                <span id="currentMoveLabel">Posisi Awal</span>
-                <span id="moveCounter" style="color:var(--accent);font-weight:700;">0 / 0</span>
+
+              <div class="review-box">
+                <div class="review-top">
+                  <div id="currentMoveLabel" class="move-title">Posisi Awal</div>
+                  <span id="moveClassBadge" class="class-badge">Start</span>
+                </div>
+                <div id="moveReason" class="review-desc">Tekan &gt; untuk menelusuri evaluasi engine pada setiap langkah.</div>
               </div>
+
+              <div class="tool-row">
+                <button id="flipBtn" class="sec" type="button">Putar Papan</button>
+                <button id="freeMoveBtn" class="sec" type="button">Free Move: OFF</button>
+              </div>
+
+              <div id="returnPartyWrap" style="display:none;margin-top:8px;">
+                <button id="returnPartyBtn" class="warn-btn" style="width:100%;" type="button">Kembali ke Jalan Semula Partai</button>
+              </div>
+
               <div class="nav-grid">
-                <button id="firstBtn" class="nav-btn" type="button">|&lt;</button>
-                <button id="prevBtn" class="nav-btn" type="button">&lt;</button>
-                <button id="nextBtn" class="nav-btn" type="button">&gt;</button>
-                <button id="lastBtn" class="nav-btn" type="button">&gt;|</button>
+                <button id="firstBtn" class="sec" type="button">|&lt;</button>
+                <button id="prevBtn" class="sec" type="button">&lt;</button>
+                <button id="nextBtn" class="sec" type="button">&gt;</button>
+                <button id="lastBtn" class="sec" type="button">&gt;|</button>
               </div>
             </div>
 
             <div class="card">
-              <div id="matchupTitle" class="section-label">Ringkasan &amp; Daftar Langkah</div>
+              <div id="matchupTitle" class="section-label">Ringkasan &amp; Klasifikasi Langkah (Online Engine)</div>
               <div id="movesDisplay" class="moves-list">Belum ada game yang dimuat.</div>
             </div>
 
@@ -223,14 +383,17 @@ jobs:
               let lastTouchEnd = 0;
               document.addEventListener("touchend", function (e) {
                 const now = Date.now();
-                if (now - lastTouchEnd <= 300) {
-                  e.preventDefault();
-                }
+                if (now - lastTouchEnd <= 300) e.preventDefault();
                 lastTouchEnd = now;
               }, { passive: false });
-              document.addEventListener("dblclick", function (e) {
-                e.preventDefault();
-              });
+              document.addEventListener("dblclick", function (e) { e.preventDefault(); });
+
+              function setLoading(show, title = "Menganalisis Game...", sub = "Menghubungkan ke engine online") {
+                const el = document.getElementById("loadingScreen");
+                document.getElementById("loadingTitle").textContent = title;
+                document.getElementById("loadingSub").textContent = sub;
+                el.classList.toggle("show", !!show);
+              }
 
               let audioCtx = null;
               function playMoveSound(type = "move") {
@@ -239,7 +402,6 @@ jobs:
                   if (!Ctx) return;
                   if (!audioCtx) audioCtx = new Ctx();
                   if (audioCtx.state === "suspended") audioCtx.resume();
-
                   const osc = audioCtx.createOscillator();
                   const gain = audioCtx.createGain();
                   if (type === "capture") {
@@ -275,6 +437,19 @@ jobs:
                 bK: '<svg viewBox="0 0 45 45"><g fill="#1e232d" stroke="#0b0d12" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22.5 11.63V6M20 8h5"/><path d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5"/><path d="M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-3.5-7.5-13-10.5-16-4-3 6 5 10 5 10V37z"/><path d="M11.5 30c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0"/></g></svg>'
               };
 
+              const PIECE_VAL = { P: 1, N: 3, B: 3.2, R: 5, Q: 9, K: 0 };
+              const CLASS_COLOR = {
+                "Brilliant!!": "var(--brilliant)",
+                "Great!": "var(--great)",
+                "Best": "var(--best)",
+                "Good": "var(--good)",
+                "Inaccuracy?!": "var(--inaccuracy)",
+                "Mistake?": "var(--mistake)",
+                "Blunder??": "var(--blunder)",
+                "Start": "#cbd5e1",
+                "What If": "#fbbf24"
+              };
+
               const INIT_BOARD = [
                 ["bR","bN","bB","bQ","bK","bB","bN","bR"],
                 ["bP","bP","bP","bP","bP","bP","bP","bP"],
@@ -287,31 +462,309 @@ jobs:
               ];
               const FILES = ["a","b","c","d","e","f","g","h"];
 
-              let states = [{ board: cloneBoard(INIT_BOARD), label: "Posisi Awal", isCapture: false }];
+              let states = [{
+                board: cloneBoard(INIT_BOARD),
+                turn: "w",
+                label: "Posisi Awal",
+                classification: "Start",
+                reason: "Posisi awal pertandingan.",
+                evalScore: 0,
+                bestMoveUci: "",
+                isCapture: false,
+                from: null,
+                to: null
+              }];
               let currentPly = 0;
+              let flipped = false;
+              let freeMoveMode = false;
+              let freeBoard = null;
+              let freeSelected = null;
+              let freeLastMove = null;
               let recentGamesCache = [];
+              let analysisRunId = 0;
 
               function cloneBoard(b) {
                 return b.map(row => row.slice());
               }
 
+              function boardToFen(board, turn = "w") {
+                const placement = board.map(row => {
+                  let s = "";
+                  let empty = 0;
+                  for (const cell of row) {
+                    if (!cell) {
+                      empty++;
+                    } else {
+                      if (empty > 0) { s += empty; empty = 0; }
+                      const pChar = cell[1];
+                      s += cell[0] === "w" ? pChar.toUpperCase() : pChar.toLowerCase();
+                    }
+                  }
+                  if (empty > 0) s += empty;
+                  return s;
+                }).join("/");
+                return placement + " " + turn + " KQkq - 0 1";
+              }
+
+              function fallbackEval(board) {
+                let score = 0;
+                for (let r = 0; r < 8; r++) {
+                  for (let c = 0; c < 8; c++) {
+                    const p = board[r][c];
+                    if (!p) continue;
+                    const base = PIECE_VAL[p[1]] || 0;
+                    const center = (r >= 2 && r <= 5 && c >= 2 && c <= 5) ? 0.25 : 0;
+                    score += p[0] === "w" ? (base + center) : -(base + center);
+                  }
+                }
+                return Number(score.toFixed(2));
+              }
+
+              async function queryOnlineEngine(fen) {
+                try {
+                  const controller = new AbortController();
+                  const timer = setTimeout(() => controller.abort(), 3500);
+                  const url = "https://stockfish.online/api/s/v2.php?fen=" + encodeURIComponent(fen) + "&depth=12";
+                  const res = await fetch(url, { signal: controller.signal });
+                  clearTimeout(timer);
+                  if (!res.ok) return null;
+                  const data = await res.json();
+                  if (!data || data.success === false) return null;
+
+                  const turn = fen.split(" ")[1] || "w";
+                  let pawnEval = null;
+                  if (data.mate !== null && data.mate !== undefined && data.mate !== "") {
+                    const mateNum = Number(data.mate);
+                    const signedMate = turn === "w" ? mateNum : -mateNum;
+                    pawnEval = signedMate >= 0 ? 15 : -15;
+                  } else if (data.evaluation !== null && data.evaluation !== undefined && data.evaluation !== "") {
+                    const rawEval = Number(data.evaluation);
+                    pawnEval = turn === "w" ? rawEval : -rawEval;
+                  }
+
+                  let bestUci = "";
+                  if (typeof data.bestmove === "string") {
+                    const parts = data.bestmove.trim().split(/\s+/);
+                    if (parts[1]) bestUci = parts[1].replace(/^move\s+/i, "");
+                  }
+
+                  return {
+                    evalScore: pawnEval !== null && !Number.isNaN(pawnEval) ? Number(pawnEval.toFixed(2)) : null,
+                    bestMove: bestUci
+                  };
+                } catch (_) {
+                  return null;
+                }
+              }
+
+              function classifyWithEngine(prevEval, nextEval, isWhite, san, captured, isSac, uciMove, prevBestUci) {
+                const delta = isWhite ? (nextEval - prevEval) : (prevEval - nextEval);
+                const matchesBest = !!(uciMove && prevBestUci && uciMove.slice(0, 4) === prevBestUci.slice(0, 4));
+
+                if (delta <= -2.2) {
+                  return {
+                    cls: "Blunder??",
+                    reason: "Blunder (Engine): penurunan evaluasi tajam (" + delta.toFixed(2) + ")." + (prevBestUci ? (" Saran engine: " + prevBestUci + ".") : "")
+                  };
+                }
+                if (delta <= -1.0) {
+                  return {
+                    cls: "Mistake?",
+                    reason: "Mistake (Engine): kehilangan evaluasi cukup besar (" + delta.toFixed(2) + ")." + (prevBestUci ? (" Alternatif lebih kuat: " + prevBestUci + ".") : "")
+                  };
+                }
+                if (delta <= -0.45) {
+                  return {
+                    cls: "Inaccuracy?!",
+                    reason: "Inaccuracy (Engine): sedikit di bawah evaluasi terbaik (" + delta.toFixed(2) + ")." + (prevBestUci ? (" Engine menyarankan " + prevBestUci + ".") : "")
+                  };
+                }
+                if (isSac && delta >= -0.25) {
+                  return {
+                    cls: "Brilliant!!",
+                    reason: "Brilliant (Engine): langkah taktis/pengorbanan tajam dengan kompensasi evaluasi terjaga."
+                  };
+                }
+                if (delta >= 1.1 || (matchesBest && delta >= 0.5)) {
+                  return {
+                    cls: "Great!",
+                    reason: "Great move (Engine): meningkatkan posisi secara signifikan (" + (delta >= 0 ? "+" : "") + delta.toFixed(2) + ")."
+                  };
+                }
+                if (matchesBest || delta >= 0.25 || captured) {
+                  return {
+                    cls: "Best",
+                    reason: matchesBest
+                      ? ("Best move sesuai pilihan engine (" + (delta >= 0 ? "+" : "") + delta.toFixed(2) + ").")
+                      : ("Langkah solid sesuai jalur evaluasi engine (" + (delta >= 0 ? "+" : "") + delta.toFixed(2) + ").")
+                  };
+                }
+                return {
+                  cls: "Good",
+                  reason: "Good: langkah yang konsisten dengan evaluasi posisi (" + (delta >= 0 ? "+" : "") + delta.toFixed(2) + ")."
+                };
+              }
+
+              function updateEvalBar(score) {
+                const clamped = Math.max(-8, Math.min(8, score));
+                const pct = 50 + (clamped / 8) * 42;
+                document.getElementById("evalFill").style.width = pct + "%";
+                const sign = score > 0 ? "+" : "";
+                document.getElementById("evalScore").textContent = sign + Number(score).toFixed(1);
+              }
+
+              function getFreeTargets(board, r, c) {
+                const p = board[r][c];
+                if (!p) return [];
+                const side = p[0];
+                const type = p[1];
+                const targets = [];
+                const inside = (rr, cc) => rr >= 0 && rr < 8 && cc >= 0 && cc < 8;
+                const empty = (rr, cc) => board[rr][cc] === null;
+                const enemy = (rr, cc) => board[rr][cc] !== null && board[rr][cc][0] !== side;
+
+                if (type === "P") {
+                  const dir = side === "w" ? -1 : 1;
+                  const startRow = side === "w" ? 6 : 1;
+                  if (inside(r + dir, c) && empty(r + dir, c)) {
+                    targets.push([r + dir, c]);
+                    if (r === startRow && inside(r + dir * 2, c) && empty(r + dir * 2, c)) {
+                      targets.push([r + dir * 2, c]);
+                    }
+                  }
+                  for (const dc of [-1, 1]) {
+                    if (inside(r + dir, c + dc) && enemy(r + dir, c + dc)) {
+                      targets.push([r + dir, c + dc]);
+                    }
+                  }
+                } else if (type === "N") {
+                  for (const [dr, dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) {
+                    const rr = r + dr, cc = c + dc;
+                    if (inside(rr, cc) && !(board[rr][cc] && board[rr][cc][0] === side)) targets.push([rr, cc]);
+                  }
+                } else if (type === "K") {
+                  for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                      if (!dr && !dc) continue;
+                      const rr = r + dr, cc = c + dc;
+                      if (inside(rr, cc) && !(board[rr][cc] && board[rr][cc][0] === side)) targets.push([rr, cc]);
+                    }
+                  }
+                } else {
+                  const dirs = [];
+                  if (type === "B" || type === "Q") dirs.push([-1,-1],[-1,1],[1,-1],[1,1]);
+                  if (type === "R" || type === "Q") dirs.push([-1,0],[1,0],[0,-1],[0,1]);
+                  for (const [dr, dc] of dirs) {
+                    let rr = r + dr, cc = c + dc;
+                    while (inside(rr, cc)) {
+                      if (empty(rr, cc)) {
+                        targets.push([rr, cc]);
+                      } else {
+                        if (enemy(rr, cc)) targets.push([rr, cc]);
+                        break;
+                      }
+                      rr += dr;
+                      cc += dc;
+                    }
+                  }
+                }
+                return targets;
+              }
+
+              function handleFreeSquareClick(r, c) {
+                if (!freeBoard) freeBoard = cloneBoard((states[currentPly] || states[0]).board);
+                const clickedPiece = freeBoard[r][c];
+                if (freeSelected) {
+                  const targets = getFreeTargets(freeBoard, freeSelected.r, freeSelected.c);
+                  if (targets.some(([tr, tc]) => tr === r && tc === c)) {
+                    const moving = freeBoard[freeSelected.r][freeSelected.c];
+                    const wasCap = freeBoard[r][c] !== null;
+                    freeBoard[r][c] = moving;
+                    if (moving[1] === "P" && (r === 0 || r === 7)) freeBoard[r][c] = moving[0] + "Q";
+                    freeBoard[freeSelected.r][freeSelected.c] = null;
+                    freeLastMove = { from: { r: freeSelected.r, c: freeSelected.c }, to: { r, c } };
+                    freeSelected = null;
+                    playMoveSound(wasCap ? "capture" : "move");
+                    renderBoard();
+                    return;
+                  }
+                }
+                freeSelected = clickedPiece ? { r, c } : null;
+                renderBoard();
+              }
+
               function renderBoard() {
                 const boardEl = document.getElementById("chessBoard");
                 const st = states[currentPly] || states[0];
-                let out = "";
-                for (let r = 0; r < 8; r++) {
-                  for (let c = 0; c < 8; c++) {
+                const activeBoard = freeMoveMode ? (freeBoard || cloneBoard(st.board)) : st.board;
+                const legalTargets = (freeMoveMode && freeSelected) ? getFreeTargets(activeBoard, freeSelected.r, freeSelected.c) : [];
+                const lastFrom = freeMoveMode ? (freeLastMove && freeLastMove.from) : st.from;
+                const lastTo = freeMoveMode ? (freeLastMove && freeLastMove.to) : st.to;
+
+                let html = "";
+                for (let vr = 0; vr < 8; vr++) {
+                  for (let vc = 0; vc < 8; vc++) {
+                    const r = flipped ? (7 - vr) : vr;
+                    const c = flipped ? (7 - vc) : vc;
                     const light = (r + c) % 2 === 0;
-                    const p = st.board[r][c];
-                    out += '<div class="sq ' + (light ? "light" : "dark") + '">' + (p ? PIECE_SVG[p] : "") + "</div>";
+                    const p = activeBoard[r][c];
+                    const isSel = freeMoveMode && freeSelected && freeSelected.r === r && freeSelected.c === c;
+                    const isLast = (lastFrom && lastFrom.r === r && lastFrom.c === c) || (lastTo && lastTo.r === r && lastTo.c === c);
+                    const isDot = legalTargets.some(([tr, tc]) => tr === r && tc === c);
+
+                    let cls = "sq " + (light ? "light" : "dark");
+                    if (isSel) cls += " selected";
+                    if (isLast) cls += " last-move";
+                    if (isDot) cls += " legal-dot";
+
+                    html += '<div class="' + cls + '" data-r="' + r + '" data-c="' + c + '">' + (p ? PIECE_SVG[p] : "") + "</div>";
                   }
                 }
-                boardEl.innerHTML = out;
-                document.getElementById("currentMoveLabel").textContent = st.label;
-                document.getElementById("moveCounter").textContent = currentPly + " / " + (states.length - 1);
+                boardEl.innerHTML = html;
+
+                boardEl.querySelectorAll(".sq").forEach(sq => {
+                  sq.addEventListener("click", function () {
+                    const rr = Number(this.getAttribute("data-r"));
+                    const cc = Number(this.getAttribute("data-c"));
+                    if (freeMoveMode) handleFreeSquareClick(rr, cc);
+                  });
+                });
+
+                if (freeMoveMode) {
+                  const ev = fallbackEval(activeBoard);
+                  updateEvalBar(ev);
+                  document.getElementById("currentMoveLabel").textContent = "Mode What-If (Eksperimen Papan)";
+                  const badge = document.getElementById("moveClassBadge");
+                  badge.textContent = "What If";
+                  badge.style.background = CLASS_COLOR["What If"];
+                  document.getElementById("moveReason").textContent = "Uji langkah alternatif bebas di papan. Klik 'Kembali ke Jalan Semula Partai' untuk balik ke posisi partai.";
+                } else {
+                  updateEvalBar(st.evalScore);
+                  document.getElementById("currentMoveLabel").textContent = st.label + " (" + currentPly + "/" + (states.length - 1) + ")";
+                  const badge = document.getElementById("moveClassBadge");
+                  badge.textContent = st.classification;
+                  badge.style.background = CLASS_COLOR[st.classification] || "var(--good)";
+                  document.getElementById("moveReason").textContent = st.reason;
+                }
+
+                document.querySelectorAll(".move-chip").forEach((chip, idx) => {
+                  chip.classList.toggle("active", !freeMoveMode && (idx + 1) === currentPly);
+                });
+              }
+
+              function exitFreeMoveToParty() {
+                freeMoveMode = false;
+                freeBoard = null;
+                freeSelected = null;
+                freeLastMove = null;
+                document.getElementById("freeMoveBtn").classList.remove("active");
+                document.getElementById("freeMoveBtn").textContent = "Free Move: OFF";
+                document.getElementById("returnPartyWrap").style.display = "none";
+                renderBoard();
               }
 
               function setPly(targetIdx, withSound = true) {
+                if (freeMoveMode) exitFreeMoveToParty();
                 const clamped = Math.max(0, Math.min(states.length - 1, targetIdx));
                 const changed = clamped !== currentPly;
                 currentPly = clamped;
@@ -361,11 +814,21 @@ jobs:
                 return true;
               }
 
-              function buildGameStates(pgn) {
+              function coordToUci(from, to, promoType) {
+                if (!from || !to) return "";
+                const f1 = FILES[from.c];
+                const r1 = String(8 - from.r);
+                const f2 = FILES[to.c];
+                const r2 = String(8 - to.r);
+                return f1 + r1 + f2 + r2 + (promoType ? promoType.toLowerCase() : "");
+              }
+
+              async function analyzeGameWithEngine(pgn) {
+                const runId = ++analysisRunId;
                 const moveText = extractMoveTextFromPgn(pgn);
                 const sans = tokenizeSans(moveText);
                 let board = cloneBoard(INIT_BOARD);
-                const nextStates = [{ board: cloneBoard(board), label: "Posisi Awal", isCapture: false }];
+                const rawMoves = [];
 
                 for (let i = 0; i < sans.length; i++) {
                   const rawSan = sans[i];
@@ -375,97 +838,179 @@ jobs:
                   const moveNo = Math.floor(i / 2) + 1;
                   const label = isWhite ? (moveNo + ". " + rawSan) : (moveNo + "... " + rawSan);
                   let captured = false;
+                  let movedFrom = null;
+                  let movedTo = null;
+                  let sacHint = false;
+                  let promoType = null;
 
                   if (san === "O-O" || san === "O-O-O") {
                     const row = isWhite ? 7 : 0;
+                    movedFrom = { r: row, c: 4 };
                     board[row][4] = null;
                     if (san === "O-O") {
                       board[row][7] = null;
                       board[row][6] = color + "K";
                       board[row][5] = color + "R";
+                      movedTo = { r: row, c: 6 };
                     } else {
                       board[row][0] = null;
                       board[row][2] = color + "K";
                       board[row][3] = color + "R";
+                      movedTo = { r: row, c: 2 };
                     }
-                    nextStates.push({ board: cloneBoard(board), label, isCapture: false });
-                    continue;
-                  }
+                  } else {
+                    const promoMatch = san.match(/=([QRBN])$/);
+                    promoType = promoMatch ? promoMatch[1] : null;
+                    const baseSan = san.replace(/=[QRBN]$/, "");
+                    const targetMatch = baseSan.match(/([a-h])([1-8])$/);
+                    if (targetMatch) {
+                      const toCol = FILES.indexOf(targetMatch[1]);
+                      const toRow = 8 - Number(targetMatch[2]);
+                      const hasPiecePrefix = /^[KQRBN]/.test(baseSan);
+                      const pieceType = hasPiecePrefix ? baseSan[0] : "P";
+                      const pieceCode = color + pieceType;
+                      const hint = baseSan.slice(hasPiecePrefix ? 1 : 0, -2).replace(/x/g, "");
+                      const reqFile = hint.match(/[a-h]/) ? FILES.indexOf(hint.match(/[a-h]/)[0]) : null;
+                      const reqRank = hint.match(/[1-8]/) ? 8 - Number(hint.match(/[1-8]/)[0]) : null;
 
-                  const promoMatch = san.match(/=([QRBN])$/);
-                  const promoType = promoMatch ? promoMatch[1] : null;
-                  const baseSan = san.replace(/=[QRBN]$/, "");
-                  const targetMatch = baseSan.match(/([a-h])([1-8])$/);
-                  if (!targetMatch) {
-                    nextStates.push({ board: cloneBoard(board), label, isCapture: false });
-                    continue;
-                  }
+                      let found = false;
+                      for (let r = 0; r < 8 && !found; r++) {
+                        for (let c = 0; c < 8 && !found; c++) {
+                          if (board[r][c] !== pieceCode) continue;
+                          if (reqFile !== null && c !== reqFile) continue;
+                          if (reqRank !== null && r !== reqRank) continue;
 
-                  const toCol = FILES.indexOf(targetMatch[1]);
-                  const toRow = 8 - Number(targetMatch[2]);
-                  const hasPiecePrefix = /^[KQRBN]/.test(baseSan);
-                  const pieceType = hasPiecePrefix ? baseSan[0] : "P";
-                  const pieceCode = color + pieceType;
+                          const dr = toRow - r;
+                          const dc = toCol - c;
+                          const adr = Math.abs(dr);
+                          const adc = Math.abs(dc);
+                          let ok = false;
 
-                  const hint = baseSan.slice(hasPiecePrefix ? 1 : 0, -2).replace(/x/g, "");
-                  const reqFile = hint.match(/[a-h]/) ? FILES.indexOf(hint.match(/[a-h]/)[0]) : null;
-                  const reqRank = hint.match(/[1-8]/) ? 8 - Number(hint.match(/[1-8]/)[0]) : null;
+                          if (pieceType === "P") {
+                            if (isWhite) {
+                              ok = (dc === 0 && dr === -1 && !board[toRow][toCol]) ||
+                                   (dc === 0 && r === 6 && dr === -2 && !board[5][c] && !board[4][c]) ||
+                                   (adc === 1 && dr === -1);
+                            } else {
+                              ok = (dc === 0 && dr === 1 && !board[toRow][toCol]) ||
+                                   (dc === 0 && r === 1 && dr === 2 && !board[2][c] && !board[3][c]) ||
+                                   (adc === 1 && dr === 1);
+                            }
+                          } else if (pieceType === "N") {
+                            ok = (adr === 2 && adc === 1) || (adr === 1 && adc === 2);
+                          } else if (pieceType === "B") {
+                            ok = adr === adc && adr > 0 && pathClear(board, r, c, toRow, toCol);
+                          } else if (pieceType === "R") {
+                            ok = (dr === 0 || dc === 0) && (adr + adc > 0) && pathClear(board, r, c, toRow, toCol);
+                          } else if (pieceType === "Q") {
+                            ok = (adr === adc || dr === 0 || dc === 0) && (adr + adc > 0) && pathClear(board, r, c, toRow, toCol);
+                          } else if (pieceType === "K") {
+                            ok = adr <= 1 && adc <= 1 && (adr + adc > 0);
+                          }
 
-                  let found = false;
-                  for (let r = 0; r < 8 && !found; r++) {
-                    for (let c = 0; c < 8 && !found; c++) {
-                      if (board[r][c] !== pieceCode) continue;
-                      if (reqFile !== null && c !== reqFile) continue;
-                      if (reqRank !== null && r !== reqRank) continue;
-
-                      const dr = toRow - r;
-                      const dc = toCol - c;
-                      const adr = Math.abs(dr);
-                      const adc = Math.abs(dc);
-                      let ok = false;
-
-                      if (pieceType === "P") {
-                        if (isWhite) {
-                          ok = (dc === 0 && dr === -1 && !board[toRow][toCol]) ||
-                               (dc === 0 && r === 6 && dr === -2 && !board[5][c] && !board[4][c]) ||
-                               (adc === 1 && dr === -1);
-                        } else {
-                          ok = (dc === 0 && dr === 1 && !board[toRow][toCol]) ||
-                               (dc === 0 && r === 1 && dr === 2 && !board[2][c] && !board[3][c]) ||
-                               (adc === 1 && dr === 1);
+                          if (ok) {
+                            const targetPiece = board[toRow][toCol];
+                            if (targetPiece !== null) {
+                              captured = true;
+                              if ((PIECE_VAL[pieceType] || 0) > (PIECE_VAL[targetPiece[1]] || 0) + 1.5) sacHint = true;
+                            }
+                            if (pieceType === "P" && adc === 1 && !targetPiece) {
+                              board[r][toCol] = null;
+                              captured = true;
+                            }
+                            board[toRow][toCol] = color + (promoType || pieceType);
+                            board[r][c] = null;
+                            movedFrom = { r, c };
+                            movedTo = { r: toRow, c: toCol };
+                            found = true;
+                          }
                         }
-                      } else if (pieceType === "N") {
-                        ok = (adr === 2 && adc === 1) || (adr === 1 && adc === 2);
-                      } else if (pieceType === "B") {
-                        ok = adr === adc && adr > 0 && pathClear(board, r, c, toRow, toCol);
-                      } else if (pieceType === "R") {
-                        ok = (dr === 0 || dc === 0) && (adr + adc > 0) && pathClear(board, r, c, toRow, toCol);
-                      } else if (pieceType === "Q") {
-                        ok = (adr === adc || dr === 0 || dc === 0) && (adr + adc > 0) && pathClear(board, r, c, toRow, toCol);
-                      } else if (pieceType === "K") {
-                        ok = adr <= 1 && adc <= 1 && (adr + adc > 0);
-                      }
-
-                      if (ok) {
-                        if (board[toRow][toCol] !== null) captured = true;
-                        if (pieceType === "P" && adc === 1 && !board[toRow][toCol]) {
-                          board[r][toCol] = null;
-                          captured = true;
-                        }
-                        board[toRow][toCol] = color + (promoType || pieceType);
-                        board[r][c] = null;
-                        found = true;
                       }
                     }
                   }
 
-                  nextStates.push({ board: cloneBoard(board), label, isCapture: captured || baseSan.includes("x") });
+                  rawMoves.push({
+                    board: cloneBoard(board),
+                    fen: boardToFen(board, isWhite ? "b" : "w"),
+                    label,
+                    rawSan,
+                    isWhite,
+                    captured: captured || san.includes("x"),
+                    sacHint,
+                    from: movedFrom,
+                    to: movedTo,
+                    uci: coordToUci(movedFrom, movedTo, promoType)
+                  });
                 }
 
-                states = nextStates;
+                const initFen = boardToFen(INIT_BOARD, "w");
+                const initEngine = await queryOnlineEngine(initFen);
+                if (runId !== analysisRunId) return;
+
+                let prevEval = (initEngine && initEngine.evalScore !== null) ? initEngine.evalScore : fallbackEval(INIT_BOARD);
+                let prevBestUci = (initEngine && initEngine.bestMove) ? initEngine.bestMove : "";
+
+                const analyzedStates = [{
+                  board: cloneBoard(INIT_BOARD),
+                  label: "Posisi Awal",
+                  classification: "Start",
+                  reason: "Evaluasi posisi awal oleh engine online.",
+                  evalScore: prevEval,
+                  isCapture: false,
+                  from: null,
+                  to: null
+                }];
+
+                const chipHtmlList = [];
+                const maxEngineQueries = Math.min(rawMoves.length, 36);
+
+                for (let i = 0; i < rawMoves.length; i++) {
+                  if (runId !== analysisRunId) return;
+                  const m = rawMoves[i];
+
+                  if (i < maxEngineQueries) {
+                    setLoading(true, "Menganalisis Langkah Engine...", "Langkah " + (i + 1) + " dari " + maxEngineQueries + " (Stockfish Online)");
+                  }
+
+                  const eng = i < maxEngineQueries ? await queryOnlineEngine(m.fen) : null;
+                  if (runId !== analysisRunId) return;
+
+                  const nextEval = (eng && eng.evalScore !== null) ? eng.evalScore : fallbackEval(m.board);
+                  const info = classifyWithEngine(prevEval, nextEval, m.isWhite, m.rawSan, m.captured, m.sacHint, m.uci, prevBestUci);
+
+                  analyzedStates.push({
+                    board: m.board,
+                    label: m.label,
+                    classification: info.cls,
+                    reason: info.reason,
+                    evalScore: nextEval,
+                    isCapture: m.captured,
+                    from: m.from,
+                    to: m.to
+                  });
+
+                  const shortTag = info.cls.replace(/[!?]/g, "");
+                  chipHtmlList.push('<span class="move-chip" data-ply="' + (i + 1) + '" title="' + info.cls + '">' + m.label + ' <small style="opacity:0.82">[' + shortTag + ']</small></span>');
+
+                  prevEval = nextEval;
+                  prevBestUci = (eng && eng.bestMove) ? eng.bestMove : "";
+                }
+
+                states = analyzedStates;
                 currentPly = 0;
-                renderBoard();
-                document.getElementById("movesDisplay").textContent = moveText || "Tidak ada langkah PGN pada game ini.";
+                exitFreeMoveToParty();
+
+                const movesEl = document.getElementById("movesDisplay");
+                if (chipHtmlList.length) {
+                  movesEl.innerHTML = chipHtmlList.join(" ");
+                  movesEl.querySelectorAll(".move-chip").forEach(ch => {
+                    ch.addEventListener("click", function () {
+                      setPly(Number(this.getAttribute("data-ply")), true);
+                    });
+                  });
+                } else {
+                  movesEl.textContent = "Tidak ada langkah PGN pada game ini.";
+                }
               }
 
               function parseGameUrl(raw) {
@@ -473,20 +1018,18 @@ jobs:
                 if (!trimmed) return null;
                 const match = trimmed.match(/chess\.com\/(?:game\/)?(?:live|daily)\/(\d+)/i) || trimmed.match(/chess\.com\/game\/(\d+)/i) || trimmed.match(/^(\d{6,})$/);
                 if (!match) return null;
-                return {
-                  id: match[1],
-                  normalizedUrl: trimmed.startsWith("http") ? trimmed : ("https://www.chess.com/game/live/" + match[1])
-                };
+                return { id: match[1] };
               }
 
-              function applyGameObject(gameObj, labelHint = "") {
+              async function applyGameObject(gameObj, labelHint = "") {
                 const white = (gameObj.white && gameObj.white.username) || "Putih";
                 const black = (gameObj.black && gameObj.black.username) || "Hitam";
                 const wRes = (gameObj.white && gameObj.white.result) || "-";
                 const bRes = (gameObj.black && gameObj.black.result) || "-";
                 document.getElementById("matchupTitle").textContent = white + " vs " + black + " (" + wRes + " / " + bRes + ")";
-                document.getElementById("statusText").textContent = labelHint || ("Game dimuat: " + white + " vs " + black + ". Tekan > untuk melangkah.");
-                buildGameStates(gameObj.pgn || "");
+                document.getElementById("statusText").textContent = labelHint || ("Menganalisis " + white + " vs " + black + " dengan engine online...");
+                await analyzeGameWithEngine(gameObj.pgn || "");
+                document.getElementById("statusText").textContent = "Selesai dianalisis. Tekan > untuk mulai menelusuri langkah.";
               }
 
               async function loadGameFromLink() {
@@ -497,49 +1040,53 @@ jobs:
                   return;
                 }
 
-                document.getElementById("statusText").textContent = "Memuat data game ID " + parsed.id + "...";
+                setLoading(true, "Memuat Game...", "Mengambil data game & menghubungkan ke engine online");
+                try {
+                  const matchedRecent = recentGamesCache.find(g => String(g.url || "").includes(parsed.id));
+                  if (matchedRecent) {
+                    await applyGameObject(matchedRecent, "Game ditemukan, menganalisis langkah...");
+                    return;
+                  }
 
-                const matchedRecent = recentGamesCache.find(g => String(g.url || "").includes(parsed.id));
-                if (matchedRecent) {
-                  applyGameObject(matchedRecent, "Game ditemukan dan dimuat otomatis.");
-                  return;
+                  try {
+                    const cbRes = await fetch("https://www.chess.com/callback/live/game/" + parsed.id);
+                    if (cbRes.ok) {
+                      const cbData = await cbRes.json();
+                      if (cbData && cbData.game && cbData.game.pgn) {
+                        await applyGameObject({
+                          white: { username: cbData.game.white && cbData.game.white.username, result: cbData.game.white && cbData.game.white.result },
+                          black: { username: cbData.game.black && cbData.game.black.username, result: cbData.game.black && cbData.game.black.result },
+                          pgn: cbData.game.pgn
+                        }, "Game dimuat dari link, menganalisis langkah...");
+                        return;
+                      }
+                    }
+                  } catch (_) {}
+
+                  try {
+                    const archRes = await fetch("https://api.chess.com/pub/player/cmaj7-9/games/archives");
+                    const archData = await archRes.json();
+                    const archives = (archData.archives || []).slice().reverse();
+                    for (const url of archives.slice(0, 4)) {
+                      const gRes = await fetch(url);
+                      const gData = await gRes.json();
+                      const found = (gData.games || []).find(g => String(g.url || "").includes(parsed.id));
+                      if (found) {
+                        await applyGameObject(found, "Game ditemukan di arsip, menganalisis langkah...");
+                        return;
+                      }
+                    }
+                  } catch (_) {}
+
+                  document.getElementById("statusText").textContent = "Game tidak ditemukan atau masih berlangsung. Gunakan link game yang sudah selesai.";
+                } finally {
+                  setLoading(false);
                 }
-
-                try {
-                  const cbRes = await fetch("https://www.chess.com/callback/live/game/" + parsed.id);
-                  if (cbRes.ok) {
-                    const cbData = await cbRes.json();
-                    if (cbData && cbData.game && cbData.game.pgn) {
-                      applyGameObject({
-                        white: { username: cbData.game.white && cbData.game.white.username, result: cbData.game.white && cbData.game.white.result },
-                        black: { username: cbData.game.black && cbData.game.black.username, result: cbData.game.black && cbData.game.black.result },
-                        pgn: cbData.game.pgn
-                      }, "Game berhasil dimuat dari link.");
-                      return;
-                    }
-                  }
-                } catch (_) {}
-
-                try {
-                  const archRes = await fetch("https://api.chess.com/pub/player/cmaj7-9/games/archives");
-                  const archData = await archRes.json();
-                  const archives = (archData.archives || []).slice().reverse();
-                  for (const url of archives.slice(0, 4)) {
-                    const gRes = await fetch(url);
-                    const gData = await gRes.json();
-                    const found = (gData.games || []).find(g => String(g.url || "").includes(parsed.id));
-                    if (found) {
-                      applyGameObject(found, "Game ditemukan di arsip dan dimuat.");
-                      return;
-                    }
-                  }
-                } catch (_) {}
-
-                document.getElementById("statusText").textContent = "Game tidak ditemukan atau masih berlangsung. Gunakan link game yang sudah selesai.";
               }
 
               async function loadRecentHistory() {
                 const box = document.getElementById("recentGames");
+                setLoading(true, "Menyiapkan 4LeChess...", "Memuat riwayat pertandingan & engine online");
                 try {
                   const res = await fetch("https://api.chess.com/pub/player/cmaj7-9/games/archives");
                   const data = await res.json();
@@ -562,34 +1109,65 @@ jobs:
                     const item = document.createElement("div");
                     item.className = "game-card" + (idx === 0 ? " active" : "");
                     item.innerHTML = '<div class="game-title">' + g.white.username + ' vs ' + g.black.username + '</div><div class="game-meta">' + (g.url || "") + '</div>';
-                    item.addEventListener("click", function () {
+                    item.addEventListener("click", async function () {
                       document.querySelectorAll(".game-card").forEach((el, i) => el.classList.toggle("active", i === idx));
-                      if (g.url) {
-                        document.getElementById("gameLinkInput").value = g.url;
+                      if (g.url) document.getElementById("gameLinkInput").value = g.url;
+                      setLoading(true, "Menganalisis Pertandingan...", "Menghubungkan ke engine online");
+                      try {
+                        await applyGameObject(g, "Game dipilih, menganalisis langkah...");
+                        playMoveSound("move");
+                      } finally {
+                        setLoading(false);
                       }
-                      applyGameObject(g, "Game dipilih dan dimuat.");
-                      playMoveSound("move");
                     });
                     box.appendChild(item);
                   });
 
                   if (recentGamesCache[0] && recentGamesCache[0].url) {
                     document.getElementById("gameLinkInput").value = recentGamesCache[0].url;
-                    applyGameObject(recentGamesCache[0], "Game terbaru otomatis dimuat. Tekan > untuk mulai melangkah.");
+                    await applyGameObject(recentGamesCache[0], "Game terbaru dimuat & dianalisis...");
                   }
                 } catch (_) {
                   box.textContent = "Tempel link game Chess.com di atas untuk memuat.";
+                } finally {
+                  setLoading(false);
                 }
               }
 
               const linkInput = document.getElementById("gameLinkInput");
               linkInput.addEventListener("input", function () {
-                if (parseGameUrl(linkInput.value)) {
-                  loadGameFromLink();
-                }
+                if (parseGameUrl(linkInput.value)) loadGameFromLink();
               });
               linkInput.addEventListener("change", loadGameFromLink);
               document.getElementById("loadBtn").addEventListener("click", loadGameFromLink);
+
+              document.getElementById("flipBtn").addEventListener("click", function () {
+                flipped = !flipped;
+                this.classList.toggle("active", flipped);
+                playMoveSound("move");
+                renderBoard();
+              });
+
+              document.getElementById("freeMoveBtn").addEventListener("click", function () {
+                if (!freeMoveMode) {
+                  freeMoveMode = true;
+                  freeBoard = cloneBoard((states[currentPly] || states[0]).board);
+                  freeSelected = null;
+                  freeLastMove = null;
+                  this.classList.add("active");
+                  this.textContent = "Free Move: ON";
+                  document.getElementById("returnPartyWrap").style.display = "block";
+                  playMoveSound("move");
+                  renderBoard();
+                } else {
+                  exitFreeMoveToParty();
+                }
+              });
+
+              document.getElementById("returnPartyBtn").addEventListener("click", function () {
+                exitFreeMoveToParty();
+                playMoveSound("move");
+              });
 
               document.getElementById("firstBtn").addEventListener("click", function () { setPly(0); });
               document.getElementById("prevBtn").addEventListener("click", function () { setPly(currentPly - 1); });
