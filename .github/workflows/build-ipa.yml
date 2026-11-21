@@ -1,16 +1,20 @@
 name: Build 4LeChess IPA
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   build-ios:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+
       - name: Setup Web App
         run: |
           mkdir -p www
@@ -68,6 +72,7 @@ jobs:
           </body>
           </html>
           EOF
+
       - name: Build Capacitor iOS
         run: |
           npm init -y
@@ -85,11 +90,13 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             CONFIGURATION_BUILD_DIR=$PWD/build_out
+
       - name: Package IPA
         run: |
           mkdir -p Payload
           cp -r build_out/App.app Payload/4LeChess.app
           zip -r 4LeChess.ipa Payload
+
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
