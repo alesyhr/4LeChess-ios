@@ -76,29 +76,4 @@ jobs:
       - name: Build Capacitor iOS
         run: |
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/ios
-          npx cap init "4LeChess" "com.alesyhr.4lechess" --web-dir=www
-          npx cap add ios
-          npx cap sync ios
-          xcodebuild \
-            -project ios/App/App.xcodeproj \
-            -scheme App \
-            -configuration Release \
-            -sdk iphoneos \
-            -arch arm64 \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            CONFIGURATION_BUILD_DIR=$PWD/build_out
-
-      - name: Package IPA
-        run: |
-          mkdir -p Payload
-          cp -r build_out/App.app Payload/4LeChess.app
-          zip -r 4LeChess.ipa Payload
-
-      - name: Upload IPA
-        uses: actions/upload-artifact@v4
-        with:
-          name: 4LeChess-IPA
-          path: 4LeChess.ipa
+          npm
