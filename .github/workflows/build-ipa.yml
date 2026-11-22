@@ -143,9 +143,14 @@ jobs:
                 text-align: right;
                 color: var(--text);
               }
-              .board {
+              .board-wrap {
+                position: relative;
                 width: 100%;
                 aspect-ratio: 1 / 1;
+              }
+              .board {
+                width: 100%;
+                height: 100%;
                 display: grid;
                 grid-template-columns: repeat(8, 1fr);
                 grid-template-rows: repeat(8, 1fr);
@@ -183,6 +188,28 @@ jobs:
                 display: block;
                 pointer-events: none;
                 filter: drop-shadow(0 1px 1px rgba(0,0,0,0.25));
+              }
+              .piece-badge {
+                position: absolute;
+                top: 2px;
+                right: 2px;
+                z-index: 4;
+                padding: 1px 4px;
+                border-radius: 6px;
+                font-size: 9px;
+                font-weight: 900;
+                line-height: 1.1;
+                color: #090d14;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.45);
+                pointer-events: none;
+              }
+              .arrow-overlay {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+                z-index: 5;
               }
               .review-box {
                 margin-top: 10px;
@@ -342,14 +369,24 @@ jobs:
                 <div id="evalScore" class="eval-score">0.0</div>
               </div>
 
-              <div id="chessBoard" class="board"></div>
+              <div class="board-wrap">
+                <div id="chessBoard" class="board"></div>
+                <svg id="bestMoveArrowSvg" class="arrow-overlay" viewBox="0 0 800 800">
+                  <defs>
+                    <marker id="bestArrowHead" markerWidth="6" markerHeight="6" refX="4.2" refY="3" orient="auto">
+                      <path d="M0,0 L6,3 L0,6 Z" fill="rgba(16, 185, 129, 0.92)" />
+                    </marker>
+                  </defs>
+                  <line id="bestMoveLine" x1="0" y1="0" x2="0" y2="0" stroke="rgba(16, 185, 129, 0.88)" stroke-width="14" stroke-linecap="round" marker-end="url(#bestArrowHead)" style="display:none;" />
+                </svg>
+              </div>
 
               <div class="review-box">
                 <div class="review-top">
                   <div id="currentMoveLabel" class="move-title">Posisi Awal</div>
                   <span id="moveClassBadge" class="class-badge">Start</span>
                 </div>
-                <div id="moveReason" class="review-desc">Tekan &gt; untuk menelusuri evaluasi engine pada setiap langkah.</div>
+                <div id="moveReason" class="review-desc">Tempel link game lalu tekan &gt; untuk menelusuri evaluasi engine pada setiap langkah.</div>
               </div>
 
               <div class="tool-row">
@@ -467,9 +504,10 @@ jobs:
                 turn: "w",
                 label: "Posisi Awal",
                 classification: "Start",
-                reason: "Posisi awal pertandingan.",
+                reason: "Tempel link game Chess.com di atas lalu klik Bedah.",
                 evalScore: 0,
                 bestMoveUci: "",
+                nextBestMoveUci: "",
                 isCapture: false,
                 from: null,
                 to: null
@@ -557,52 +595,107 @@ jobs:
                 }
               }
 
-              function classifyWithEngine(prevEval, nextEval, isWhite, san, captured, isSac, uciMove, prevBestUci) {
-                const delta = isWhite ? (nextEval - prevEval) : (prevEval - nextEval);
-                const matchesBest = !!(uciMove && prevBestUci && uciMove.slice(0, 4) === prevBestUci.slice(0, 4));
+              function winChance(cpPawns) {
+                return 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * (cpPawns * 100))) - 1);
+              }
 
-                if (delta <= -2.2) {
+              function classifyWithEngine(prevEval, nextEval, isWhite, san, captured, isSac, uciMove, prevBestUci) {
+                const wcBefore = winChance(prevEval);
+                const wcAfter = winChance(nextEval);
+                const wcLoss = isWhite ? (wcBefore - wcAfter) : (wcAfter - wcBefore);
+                const matchesBest = !!(uciMove && prevBestUci && uciMove.slice(0, 4) === prevBestUci.slice(0, 4));
+                const isCheck = san.includes("+") || san.includes("#");
+
+                if (wcLoss >= 18) {
                   return {
                     cls: "Blunder??",
-                    reason: "Blunder (Engine): penurunan evaluasi tajam (" + delta.toFixed(2) + ")." + (prevBestUci ? (" Saran engine: " + prevBestUci + ".") : "")
+                    reason: "Blunder: peluang menang turun tajam (-" + wcLoss.toFixed(1) + "%)." + (prevBestUci ? (" Saran engine: " + prevBestUci + ".") : "")
                   };
                 }
-                if (delta <= -1.0) {
+                if (wcLoss >= 9) {
                   return {
                     cls: "Mistake?",
-                    reason: "Mistake (Engine): kehilangan evaluasi cukup besar (" + delta.toFixed(2) + ")." + (prevBestUci ? (" Alternatif lebih kuat: " + prevBestUci + ".") : "")
+                    reason: "Mistake: peluang menang turun -" + wcLoss.toFixed(1) + "%." + (prevBestUci ? (" Alternatif lebih baik: " + prevBestUci + ".") : "")
                   };
                 }
-                if (delta <= -0.45) {
+                if (wcLoss >= 4) {
                   return {
                     cls: "Inaccuracy?!",
-                    reason: "Inaccuracy (Engine): sedikit di bawah evaluasi terbaik (" + delta.toFixed(2) + ")." + (prevBestUci ? (" Engine menyarankan " + prevBestUci + ".") : "")
+                    reason: "Inaccuracy: sedikit kurang presisi (-" + wcLoss.toFixed(1) + "%)." + (prevBestUci ? (" Engine menyarankan " + prevBestUci + ".") : "")
                   };
                 }
-                if (isSac && delta >= -0.25) {
+                if (isSac && wcLoss <= 1.2 && wcAfter >= 42) {
                   return {
                     cls: "Brilliant!!",
-                    reason: "Brilliant (Engine): langkah taktis/pengorbanan tajam dengan kompensasi evaluasi terjaga."
+                    reason: "Brilliant: pengorbanan/inisiatif taktis tajam dengan kompensasi posisi yang kuat."
                   };
                 }
-                if (delta >= 1.1 || (matchesBest && delta >= 0.5)) {
+                if (!matchesBest && wcLoss <= 0.5 && (isCheck || captured) && (isWhite ? nextEval > prevEval + 0.6 : prevEval - nextEval > 0.6)) {
                   return {
                     cls: "Great!",
-                    reason: "Great move (Engine): meningkatkan posisi secara signifikan (" + (delta >= 0 ? "+" : "") + delta.toFixed(2) + ")."
+                    reason: "Great move: langkah kuat yang mengubah dinamika posisi secara signifikan."
                   };
                 }
-                if (matchesBest || delta >= 0.25 || captured) {
+                if (matchesBest || wcLoss <= 1.0) {
                   return {
                     cls: "Best",
                     reason: matchesBest
-                      ? ("Best move sesuai pilihan engine (" + (delta >= 0 ? "+" : "") + delta.toFixed(2) + ").")
-                      : ("Langkah solid sesuai jalur evaluasi engine (" + (delta >= 0 ? "+" : "") + delta.toFixed(2) + ").")
+                      ? "Best move: sesuai pilihan utama engine."
+                      : "Best: langkah optimal sesuai evaluasi posisi."
                   };
                 }
                 return {
                   cls: "Good",
-                  reason: "Good: langkah yang konsisten dengan evaluasi posisi (" + (delta >= 0 ? "+" : "") + delta.toFixed(2) + ")."
+                  reason: "Good: langkah solid yang menjaga struktur posisi."
                 };
+              }
+
+              function symbolForClass(cls) {
+                const map = {
+                  "Brilliant!!": "!!",
+                  "Great!": "!",
+                  "Best": "★",
+                  "Good": "✓",
+                  "Inaccuracy?!": "?!",
+                  "Mistake?": "?",
+                  "Blunder??": "??",
+                  "What If": "W"
+                };
+                return map[cls] || "";
+              }
+
+              function renderBestMoveArrow(uciMove) {
+                const line = document.getElementById("bestMoveLine");
+                if (!line) return;
+                if (freeMoveMode || !uciMove || uciMove.length < 4) {
+                  line.style.display = "none";
+                  return;
+                }
+                const cFromFile = FILES.indexOf(uciMove[0]);
+                const rFromBoard = 8 - Number(uciMove[1]);
+                const cToFile = FILES.indexOf(uciMove[2]);
+                const rToBoard = 8 - Number(uciMove[3]);
+
+                if (cFromFile < 0 || cToFile < 0 || rFromBoard < 0 || rFromBoard > 7 || rToBoard < 0 || rToBoard > 7) {
+                  line.style.display = "none";
+                  return;
+                }
+
+                const vr1 = flipped ? (7 - rFromBoard) : rFromBoard;
+                const vc1 = flipped ? (7 - cFromFile) : cFromFile;
+                const vr2 = flipped ? (7 - rToBoard) : rToBoard;
+                const vc2 = flipped ? (7 - cToFile) : cToFile;
+
+                const x1 = vc1 * 100 + 50;
+                const y1 = vr1 * 100 + 50;
+                const x2 = vc2 * 100 + 50;
+                const y2 = vr2 * 100 + 50;
+
+                line.setAttribute("x1", x1);
+                line.setAttribute("y1", y1);
+                line.setAttribute("x2", x2);
+                line.setAttribute("y2", y2);
+                line.style.display = "block";
               }
 
               function updateEvalBar(score) {
@@ -717,7 +810,16 @@ jobs:
                     if (isLast) cls += " last-move";
                     if (isDot) cls += " legal-dot";
 
-                    html += '<div class="' + cls + '" data-r="' + r + '" data-c="' + c + '">' + (p ? PIECE_SVG[p] : "") + "</div>";
+                    let badgeHtml = "";
+                    if (!freeMoveMode && currentPly > 0 && p && lastTo && lastTo.r === r && lastTo.c === c) {
+                      const sym = symbolForClass(st.classification);
+                      const bg = CLASS_COLOR[st.classification] || "var(--good)";
+                      if (sym) {
+                        badgeHtml = '<span class="piece-badge" style="background:' + bg + ';">' + sym + '</span>';
+                      }
+                    }
+
+                    html += '<div class="' + cls + '" data-r="' + r + '" data-c="' + c + '">' + badgeHtml + (p ? PIECE_SVG[p] : "") + "</div>";
                   }
                 }
                 boardEl.innerHTML = html;
@@ -733,6 +835,7 @@ jobs:
                 if (freeMoveMode) {
                   const ev = fallbackEval(activeBoard);
                   updateEvalBar(ev);
+                  renderBestMoveArrow("");
                   document.getElementById("currentMoveLabel").textContent = "Mode What-If (Eksperimen Papan)";
                   const badge = document.getElementById("moveClassBadge");
                   badge.textContent = "What If";
@@ -740,11 +843,13 @@ jobs:
                   document.getElementById("moveReason").textContent = "Uji langkah alternatif bebas di papan. Klik 'Kembali ke Jalan Semula Partai' untuk balik ke posisi partai.";
                 } else {
                   updateEvalBar(st.evalScore);
+                  renderBestMoveArrow(st.nextBestMoveUci || st.bestMoveUci || "");
                   document.getElementById("currentMoveLabel").textContent = st.label + " (" + currentPly + "/" + (states.length - 1) + ")";
                   const badge = document.getElementById("moveClassBadge");
                   badge.textContent = st.classification;
                   badge.style.background = CLASS_COLOR[st.classification] || "var(--good)";
-                  document.getElementById("moveReason").textContent = st.reason;
+                  const arrowNote = (st.nextBestMoveUci || st.bestMoveUci) ? (" • Panah hijau: saran engine " + (st.nextBestMoveUci || st.bestMoveUci)) : "";
+                  document.getElementById("moveReason").textContent = st.reason + arrowNote;
                 }
 
                 document.querySelectorAll(".move-chip").forEach((chip, idx) => {
@@ -956,6 +1061,8 @@ jobs:
                   classification: "Start",
                   reason: "Evaluasi posisi awal oleh engine online.",
                   evalScore: prevEval,
+                  bestMoveUci: prevBestUci,
+                  nextBestMoveUci: prevBestUci,
                   isCapture: false,
                   from: null,
                   to: null
@@ -976,6 +1083,7 @@ jobs:
                   if (runId !== analysisRunId) return;
 
                   const nextEval = (eng && eng.evalScore !== null) ? eng.evalScore : fallbackEval(m.board);
+                  const nextBestUci = (eng && eng.bestMove) ? eng.bestMove : "";
                   const info = classifyWithEngine(prevEval, nextEval, m.isWhite, m.rawSan, m.captured, m.sacHint, m.uci, prevBestUci);
 
                   analyzedStates.push({
@@ -984,6 +1092,8 @@ jobs:
                     classification: info.cls,
                     reason: info.reason,
                     evalScore: nextEval,
+                    bestMoveUci: prevBestUci,
+                    nextBestMoveUci: nextBestUci,
                     isCapture: m.captured,
                     from: m.from,
                     to: m.to
@@ -993,7 +1103,7 @@ jobs:
                   chipHtmlList.push('<span class="move-chip" data-ply="' + (i + 1) + '" title="' + info.cls + '">' + m.label + ' <small style="opacity:0.82">[' + shortTag + ']</small></span>');
 
                   prevEval = nextEval;
-                  prevBestUci = (eng && eng.bestMove) ? eng.bestMove : "";
+                  prevBestUci = nextBestUci;
                 }
 
                 states = analyzedStates;
@@ -1086,7 +1196,6 @@ jobs:
 
               async function loadRecentHistory() {
                 const box = document.getElementById("recentGames");
-                setLoading(true, "Menyiapkan 4LeChess...", "Memuat riwayat pertandingan & engine online");
                 try {
                   const res = await fetch("https://api.chess.com/pub/player/cmaj7-9/games/archives");
                   const data = await res.json();
@@ -1107,7 +1216,7 @@ jobs:
                   box.innerHTML = "";
                   recentGamesCache.forEach((g, idx) => {
                     const item = document.createElement("div");
-                    item.className = "game-card" + (idx === 0 ? " active" : "");
+                    item.className = "game-card";
                     item.innerHTML = '<div class="game-title">' + g.white.username + ' vs ' + g.black.username + '</div><div class="game-meta">' + (g.url || "") + '</div>';
                     item.addEventListener("click", async function () {
                       document.querySelectorAll(".game-card").forEach((el, i) => el.classList.toggle("active", i === idx));
@@ -1122,15 +1231,8 @@ jobs:
                     });
                     box.appendChild(item);
                   });
-
-                  if (recentGamesCache[0] && recentGamesCache[0].url) {
-                    document.getElementById("gameLinkInput").value = recentGamesCache[0].url;
-                    await applyGameObject(recentGamesCache[0], "Game terbaru dimuat & dianalisis...");
-                  }
                 } catch (_) {
                   box.textContent = "Tempel link game Chess.com di atas untuk memuat.";
-                } finally {
-                  setLoading(false);
                 }
               }
 
